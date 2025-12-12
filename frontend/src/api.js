@@ -6,7 +6,8 @@ const api = axios.create({
 });
 
 // Endpoints de rutinas
-export const fetchRutinas = () => api.get("/api/rutinas");
+export const fetchRutinas = ({ limit = 10, offset = 0 } = {}) =>
+  api.get("/api/rutinas", { params: { limit, offset } });
 export const searchRutinas = (nombre) => api.get("/api/rutinas/buscar", { params: { nombre } });
 export const createRutina = (data) => api.post("/api/rutinas", data);
 export const updateRutina = (id, data) => api.put(`/api/rutinas/${id}`, data);

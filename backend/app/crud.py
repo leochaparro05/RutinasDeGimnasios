@@ -1,5 +1,6 @@
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlmodel import select
@@ -12,10 +13,12 @@ class UniqueNameError(Exception):
     """Se lanza cuando el nombre de rutina ya existe."""
 
 
-def listar_rutinas(session: Session) -> List[Rutina]:
-    """Devuelve todas las rutinas ordenadas por fecha de creación descendente."""
-    statement = select(Rutina).order_by(Rutina.creado_en.desc())
-    return session.exec(statement).all()
+def listar_rutinas(session: Session, limit: int, offset: int) -> Tuple[List[Rutina], int]:
+    """Devuelve rutinas con paginación y el total para UI."""
+    statement = select(Rutina).order_by(Rutina.creado_en.desc()).offset(offset).limit(limit)
+    items = session.exec(statement).all()
+    total = session.exec(select(func.count()).select_from(Rutina)).one()
+    return items, total
 
 
 def obtener_rutina(session: Session, rutina_id: int) -> Optional[Rutina]:

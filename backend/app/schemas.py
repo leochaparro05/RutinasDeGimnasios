@@ -101,3 +101,12 @@ class RutinaRead(RutinaBase):
         orm_mode = True
 
 
+class RutinaListResponse(BaseModel):
+    """Respuesta paginada del listado de rutinas."""
+
+    items: List[RutinaRead]
+    total: int
+    limit: int
+    offset: int
+
+

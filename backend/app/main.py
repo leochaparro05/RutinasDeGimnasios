@@ -10,6 +10,7 @@ from .schemas import (
     EjercicioRead,
     EjercicioUpdate,
     RutinaCreate,
+    RutinaListResponse,
     RutinaRead,
     RutinaUpdate,
 )
@@ -46,10 +47,15 @@ def health_check():
 
 
 # Rutinas
-@app.get("/api/rutinas", response_model=list[RutinaRead])
-def listar_rutinas(session: Session = Depends(get_session)) -> list[Rutina]:
-    """Listar todas las rutinas."""
-    return crud.listar_rutinas(session)
+@app.get("/api/rutinas", response_model=RutinaListResponse)
+def listar_rutinas(
+    limit: int = Query(10, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    session: Session = Depends(get_session),
+) -> RutinaListResponse:
+    """Listar rutinas con paginación (limit/offset)."""
+    items, total = crud.listar_rutinas(session, limit=limit, offset=offset)
+    return {"items": items, "total": total, "limit": limit, "offset": offset}
 
 
 @app.get("/api/rutinas/{rutina_id}", response_model=RutinaRead)

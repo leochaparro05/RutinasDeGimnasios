@@ -36,12 +36,15 @@ function App() {
   // Estado global de la UI
   const [rutinas, setRutinas] = useState([]);
   const [busqueda, setBusqueda] = useState("");
+  const [total, setTotal] = useState(0);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState("");
   const [formRutina, setFormRutina] = useState({ nombre: "", descripcion: "" });
   const [ejerciciosNuevos, setEjerciciosNuevos] = useState([inicialEjercicio]);
   const [ejercicioPorRutina, setEjercicioPorRutina] = useState({});
   const [editandoEjercicio, setEditandoEjercicio] = useState(null);
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
   // Agrupa ejercicios por día para mostrarlos ordenados
   const ejerciciosPorDia = (ejercicios) =>
@@ -58,8 +61,10 @@ function App() {
     setCargando(true);
     setError("");
     try {
-      const resp = await fetchRutinas();
-      setRutinas(resp.data);
+      const offset = (page - 1) * pageSize;
+      const resp = await fetchRutinas({ limit: pageSize, offset });
+      setRutinas(resp.data.items);
+      setTotal(resp.data.total);
     } catch (e) {
       setError("No se pudieron cargar las rutinas");
     } finally {
@@ -68,12 +73,19 @@ function App() {
   };
 
   useEffect(() => {
+    if (!busqueda) {
+      cargarRutinas();
+    }
+  }, [page]);
+
+  useEffect(() => {
     cargarRutinas();
   }, []);
 
   // Búsqueda en vivo por nombre
   const buscar = async (texto) => {
     setBusqueda(texto);
+    setPage(1);
     if (!texto) {
       cargarRutinas();
       return;
@@ -81,6 +93,7 @@ function App() {
     try {
       const resp = await searchRutinas(texto);
       setRutinas(resp.data);
+      setTotal(resp.data.length);
     } catch (e) {
       setError("Error al buscar rutinas");
     }
@@ -220,6 +233,12 @@ function App() {
       })),
     [rutinas]
   );
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const irPagina = (nueva) => {
+    if (nueva < 1 || nueva > totalPages) return;
+    setPage(nueva);
+  };
 
   return (
     <div className="container">
@@ -370,7 +389,7 @@ function App() {
         {/* Columna: Listado de rutinas */}
         <div className="card">
           <div className="space-between">
-            <h3 className="title">Rutinas ({rutinas.length})</h3>
+            <h3 className="title">Rutinas ({total})</h3>
             <button className="secondary" onClick={cargarRutinas}>
               Recargar
             </button>
@@ -677,6 +696,23 @@ function App() {
                 </div>
               </div>
             ))}
+          </div>
+          <div className="space-between" style={{ marginTop: 12 }}>
+            <div className="muted">
+              Página {page} de {totalPages} — mostrando {rutinas.length} de {total}
+            </div>
+            <div className="row">
+              <button className="secondary" disabled={page === 1} onClick={() => irPagina(page - 1)}>
+                ← Anterior
+              </button>
+              <button
+                className="secondary"
+                disabled={page >= totalPages}
+                onClick={() => irPagina(page + 1)}
+              >
+                Siguiente →
+              </button>
+            </div>
           </div>
         </div>
       </div>
