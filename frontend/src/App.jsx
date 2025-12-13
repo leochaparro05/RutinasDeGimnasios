@@ -63,10 +63,14 @@ function App() {
     try {
       const offset = (page - 1) * pageSize;
       const resp = await fetchRutinas({ limit: pageSize, offset });
-      setRutinas(resp.data.items);
-      setTotal(resp.data.total);
+      const items = resp?.data?.items ?? resp?.data ?? [];
+      const totalResp = resp?.data?.total ?? items.length ?? 0;
+      setRutinas(items);
+      setTotal(totalResp);
     } catch (e) {
       setError("No se pudieron cargar las rutinas");
+      setRutinas([]);
+      setTotal(0);
     } finally {
       setCargando(false);
     }
@@ -92,10 +96,13 @@ function App() {
     }
     try {
       const resp = await searchRutinas(texto);
-      setRutinas(resp.data);
-      setTotal(resp.data.length);
+      const items = resp?.data ?? [];
+      setRutinas(items);
+      setTotal(items.length);
     } catch (e) {
       setError("Error al buscar rutinas");
+      setRutinas([]);
+      setTotal(0);
     }
   };
 

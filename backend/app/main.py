@@ -58,15 +58,6 @@ def listar_rutinas(
     return {"items": items, "total": total, "limit": limit, "offset": offset}
 
 
-@app.get("/api/rutinas/{rutina_id}", response_model=RutinaRead)
-def obtener_rutina(rutina_id: int, session: Session = Depends(get_session)) -> Rutina:
-    """Obtener detalle de una rutina por ID."""
-    rutina = crud.obtener_rutina(session, rutina_id)
-    if not rutina:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rutina no encontrada")
-    return rutina
-
-
 @app.get("/api/rutinas/buscar", response_model=list[RutinaRead])
 def buscar_rutinas(
     nombre: str = Query(..., min_length=1),
@@ -74,6 +65,15 @@ def buscar_rutinas(
 ) -> list[Rutina]:
     """Búsqueda parcial por nombre (case-insensitive)."""
     return crud.buscar_rutinas(session, nombre)
+
+
+@app.get("/api/rutinas/{rutina_id}", response_model=RutinaRead)
+def obtener_rutina(rutina_id: int, session: Session = Depends(get_session)) -> Rutina:
+    """Obtener detalle de una rutina por ID."""
+    rutina = crud.obtener_rutina(session, rutina_id)
+    if not rutina:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rutina no encontrada")
+    return rutina
 
 
 @app.post("/api/rutinas", response_model=RutinaRead, status_code=status.HTTP_201_CREATED)
