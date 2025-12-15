@@ -51,6 +51,7 @@ function App() {
   const [filtroEjercicio, setFiltroEjercicio] = useState("");
   const [stats, setStats] = useState(null);
   const [activeTab, setActiveTab] = useState("listar"); // listar | crear | estadisticas
+  const [dragData, setDragData] = useState(null); // { ejercicioId, dia, rutinaId }
 
   // Agrupa ejercicios por día para mostrarlos ordenados
   const ejerciciosPorDia = (ejercicios) =>
@@ -288,6 +289,38 @@ function App() {
     }
   };
 
+  // Drag & Drop de ejercicios
+  const onDragStart = (ej, dia, rutinaId) => setDragData({ ejercicioId: ej.id, dia, rutinaId });
+  const onDragOver = (e, dia, rutinaId) => {
+    if (dragData && dragData.dia === dia && dragData.rutinaId === rutinaId) {
+      e.preventDefault();
+    }
+  };
+  const onDrop = async (targetEj, dia, rutina) => {
+    if (!dragData || dragData.dia !== dia || dragData.rutinaId !== rutina.id) return;
+    if (dragData.ejercicioId === targetEj.id) return;
+
+    const ejerciciosDia = [...(rutina.ejerciciosPorDia[dia] || [])];
+    const draggedIdx = ejerciciosDia.findIndex((e) => e.id === dragData.ejercicioId);
+    const targetIdx = ejerciciosDia.findIndex((e) => e.id === targetEj.id);
+    if (draggedIdx === -1 || targetIdx === -1) return;
+
+    const [dragged] = ejerciciosDia.splice(draggedIdx, 1);
+    ejerciciosDia.splice(targetIdx, 0, dragged);
+
+    // Reasignar orden secuencial en este día
+    try {
+      await Promise.all(
+        ejerciciosDia.map((e, idx) =>
+          updateEjercicio(e.id, { orden: idx + 1 }).catch(() => null)
+        )
+      );
+      await cargarRutinas();
+    } finally {
+      setDragData(null);
+    }
+  };
+
   return (
     <div className="container">
       <div className="header">
@@ -521,15 +554,25 @@ function App() {
                       </div>
                       <div className="list">
                         {ejercicios.map((ej) => (
-                          <div key={ej.id} className="card">
+                          <div
+                            key={ej.id}
+                            className="card draggable"
+                            draggable
+                            onDragStart={() => onDragStart(ej, dia, rutina.id)}
+                            onDragOver={(e) => onDragOver(e, dia, rutina.id)}
+                            onDrop={() => onDrop(ej, dia, rutina)}
+                          >
                             <div className="space-between">
-                              <div>
-                                <strong>{ej.nombre}</strong>
-                                <p className="muted">
-                                  {ej.series}x{ej.repeticiones} {ej.peso ? `- ${ej.peso} kg` : ""}
-                                  {ej.orden ? ` - Orden ${ej.orden}` : ""}
-                                </p>
-                                {ej.notas && <p className="muted">{ej.notas}</p>}
+                              <div className="row" style={{ alignItems: "center" }}>
+                                <span className="drag-handle">⋮⋮</span>
+                                <div>
+                                  <strong>{ej.nombre}</strong>
+                                  <p className="muted">
+                                    {ej.series}x{ej.repeticiones} {ej.peso ? `- ${ej.peso} kg` : ""}
+                                    {ej.orden ? ` - Orden ${ej.orden}` : ""}
+                                  </p>
+                                  {ej.notas && <p className="muted">{ej.notas}</p>}
+                                </div>
                               </div>
                               <div className="row">
                                 <button className="secondary" onClick={() => editarEjercicio(ej)}>

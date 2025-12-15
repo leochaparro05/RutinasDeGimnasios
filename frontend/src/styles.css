@@ -99,6 +99,24 @@ label {
   font-size: 12px;
 }
 
+.draggable {
+  cursor: grab;
+}
+
+.draggable:active {
+  cursor: grabbing;
+}
+
+.drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+  color: #475569;
+  font-weight: 700;
+  user-select: none;
+}
+
 .list {
   display: flex;
   flex-direction: column;
