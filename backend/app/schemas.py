@@ -1,4 +1,5 @@
 from datetime import datetime
+from datetime import date
 from typing import List, Optional
 
 from pydantic import BaseModel, Field, validator
@@ -132,5 +133,27 @@ class EstadisticasResponse(BaseModel):
     total_ejercicios: int
     top_rutinas: List[EstadisticaRutina]
     dias_mas_entrenados: List[EstadisticaDia]
+
+
+class PlanificacionBase(BaseModel):
+    fecha: date
+    rutina_id: int
+
+
+class PlanificacionCreate(PlanificacionBase):
+    pass
+
+
+class PlanificacionUpdate(BaseModel):
+    fecha: Optional[date] = None
+    rutina_id: Optional[int] = None
+
+
+class PlanificacionRead(PlanificacionBase):
+    id: int
+    rutina: Optional[RutinaRead] = None
+
+    class Config:
+        orm_mode = True
 
 

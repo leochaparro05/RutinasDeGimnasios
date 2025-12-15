@@ -15,6 +15,10 @@ export const deleteRutina = (id) => api.delete(`/api/rutinas/${id}`);
 export const duplicateRutina = (id, nombre) =>
   api.post(`/api/rutinas/${id}/duplicar`, nombre ? { nombre } : {});
 export const fetchStats = () => api.get("/api/estadisticas");
+export const fetchPlanificaciones = () => api.get("/api/planificaciones");
+export const createPlanificacion = (data) => api.post("/api/planificaciones", data);
+export const updatePlanificacion = (id, data) => api.put(`/api/planificaciones/${id}`, data);
+export const deletePlanificacion = (id) => api.delete(`/api/planificaciones/${id}`);
 
 // Endpoints de ejercicios
 export const addEjercicio = (rutinaId, data) =>

@@ -4,17 +4,20 @@ from sqlalchemy.orm import Session
 
 from . import crud
 from .database import get_session, init_db
-from .models import DiaSemana, Ejercicio, Rutina
+from .models import DiaSemana, Ejercicio, Rutina, Planificacion
 from .schemas import (
     EjercicioCreate,
     EjercicioRead,
     EjercicioUpdate,
+    EstadisticasResponse,
     RutinaCreate,
-    RutinaDuplicatePayload,
     RutinaListResponse,
     RutinaRead,
     RutinaUpdate,
-    EstadisticasResponse,
+    RutinaDuplicatePayload,
+    PlanificacionCreate,
+    PlanificacionRead,
+    PlanificacionUpdate,
 )
 
 # Configuración base de la aplicación FastAPI
@@ -125,6 +128,44 @@ def duplicar_rutina(
 def obtener_estadisticas(session: Session = Depends(get_session)) -> EstadisticasResponse:
     """Estadísticas básicas: totales, top rutinas y días más entrenados."""
     return crud.obtener_estadisticas(session)
+
+
+# Planificaciones (calendario)
+@app.get("/api/planificaciones", response_model=list[PlanificacionRead])
+def listar_planificaciones(session: Session = Depends(get_session)) -> list[PlanificacionRead]:
+    return crud.listar_planificaciones(session)
+
+
+@app.post("/api/planificaciones", response_model=PlanificacionRead, status_code=201)
+def crear_planificacion(data: PlanificacionCreate, session: Session = Depends(get_session)) -> Planificacion:
+    # Validar que la rutina exista
+    if not crud.obtener_rutina(session, data.rutina_id):
+        raise HTTPException(status_code=404, detail="Rutina no encontrada")
+    existente = crud.obtener_plan_por_fecha(session, data.fecha)
+    if existente:
+        # Si ya existe para esa fecha, actualizar
+        return crud.actualizar_planificacion(session, existente, PlanificacionUpdate(rutina_id=data.rutina_id))
+    return crud.crear_planificacion(session, data)
+
+
+@app.put("/api/planificaciones/{plan_id}", response_model=PlanificacionRead)
+def actualizar_planificacion(
+    plan_id: int, data: PlanificacionUpdate, session: Session = Depends(get_session)
+) -> Planificacion:
+    plan = session.get(Planificacion, plan_id)
+    if not plan:
+        raise HTTPException(status_code=404, detail="Planificación no encontrada")
+    if data.rutina_id and not crud.obtener_rutina(session, data.rutina_id):
+        raise HTTPException(status_code=404, detail="Rutina no encontrada")
+    return crud.actualizar_planificacion(session, plan, data)
+
+
+@app.delete("/api/planificaciones/{plan_id}", status_code=204)
+def eliminar_planificacion(plan_id: int, session: Session = Depends(get_session)) -> None:
+    plan = session.get(Planificacion, plan_id)
+    if not plan:
+        raise HTTPException(status_code=404, detail="Planificación no encontrada")
+    crud.eliminar_planificacion(session, plan)
 
 
 @app.delete("/api/rutinas/{rutina_id}", status_code=status.HTTP_204_NO_CONTENT)

@@ -6,10 +6,14 @@ import {
   deleteRutina,
   fetchRutinas,
   fetchStats,
+  fetchPlanificaciones,
   searchRutinas,
   updateEjercicio,
   updateRutina,
   duplicateRutina,
+  createPlanificacion,
+  updatePlanificacion,
+  deletePlanificacion,
 } from "./api";
 
 // Días disponibles (para selects)
@@ -52,6 +56,7 @@ function App() {
   const [stats, setStats] = useState(null);
   const [activeTab, setActiveTab] = useState("listar"); // listar | crear | estadisticas
   const [dragData, setDragData] = useState(null); // { ejercicioId, dia, rutinaId }
+  const [plans, setPlans] = useState([]); // {id, fecha, rutina_id, rutina?}
 
   // Agrupa ejercicios por día para mostrarlos ordenados
   const ejerciciosPorDia = (ejercicios) =>
@@ -97,6 +102,7 @@ function App() {
   useEffect(() => {
     cargarRutinas();
     cargarStats();
+    cargarPlanificaciones();
   }, []);
 
   // Búsqueda en vivo por nombre
@@ -289,6 +295,15 @@ function App() {
     }
   };
 
+  const cargarPlanificaciones = async () => {
+    try {
+      const resp = await fetchPlanificaciones();
+      setPlans(resp.data);
+    } catch (e) {
+      setPlans([]);
+    }
+  };
+
   // Drag & Drop de ejercicios
   const onDragStart = (ej, dia, rutinaId) => setDragData({ ejercicioId: ej.id, dia, rutinaId });
   const onDragOver = (e, dia, rutinaId) => {
@@ -318,6 +333,44 @@ function App() {
       await cargarRutinas();
     } finally {
       setDragData(null);
+    }
+  };
+
+  // Helpers calendario
+  const toISO = (d) => d.toISOString().slice(0, 10);
+  const weekDates = Array.from({ length: 7 }).map((_, idx) => {
+    const d = new Date();
+    d.setDate(d.getDate() + idx);
+    return d;
+  });
+
+  const planPorFecha = plans.reduce((acc, p) => {
+    acc[p.fecha] = p;
+    return acc;
+  }, {});
+
+  const guardarPlan = async (fecha, rutinaId) => {
+    const existente = planPorFecha[fecha];
+    try {
+      if (existente) {
+        await updatePlanificacion(existente.id, { rutina_id: rutinaId, fecha });
+      } else {
+        await createPlanificacion({ fecha, rutina_id: rutinaId });
+      }
+      await cargarPlanificaciones();
+    } catch (e) {
+      setError("No se pudo guardar la planificación");
+    }
+  };
+
+  const borrarPlan = async (fecha) => {
+    const existente = planPorFecha[fecha];
+    if (!existente) return;
+    try {
+      await deletePlanificacion(existente.id);
+      await cargarPlanificaciones();
+    } catch (e) {
+      setError("No se pudo eliminar la planificación");
     }
   };
 
@@ -374,6 +427,7 @@ function App() {
           { id: "listar", label: "Listar" },
           { id: "crear", label: "Crear" },
           { id: "estadisticas", label: "Estadísticas" },
+          { id: "calendario", label: "Calendario" },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -905,6 +959,60 @@ function App() {
           ) : (
             <p className="muted">No se pudieron cargar las estadísticas.</p>
           )}
+        </div>
+      )}
+
+      {activeTab === "calendario" && (
+        <div className="card" style={{ marginTop: 12 }}>
+          <div className="space-between">
+            <div>
+              <h3 className="title">Calendario semanal</h3>
+              <p className="muted">Planifica qué rutina hacer cada día</p>
+            </div>
+            <button className="secondary" onClick={cargarPlanificaciones}>
+              Refrescar
+            </button>
+          </div>
+          <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+            {weekDates.map((d) => {
+              const iso = toISO(d);
+              const plan = planPorFecha[iso];
+              return (
+                <div key={iso} className="card" style={{ background: "#f8fafc" }}>
+                  <div className="space-between">
+                    <div>
+                      <strong>{d.toLocaleDateString()}</strong>
+                      <p className="muted">({iso})</p>
+                    </div>
+                    {plan && (
+                      <button className="danger" type="button" onClick={() => borrarPlan(iso)}>
+                        Quitar
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid" style={{ gap: 8 }}>
+                    <label>Rutina</label>
+                    <select
+                      value={plan?.rutina_id || ""}
+                      onChange={(e) => guardarPlan(iso, Number(e.target.value))}
+                    >
+                      <option value="">Seleccione rutina</option>
+                      {rutinas.map((r) => (
+                        <option key={r.id} value={r.id}>
+                          {r.nombre}
+                        </option>
+                      ))}
+                    </select>
+                    {plan?.rutina && (
+                      <p className="muted" style={{ margin: 0 }}>
+                        Asignada: {plan.rutina.nombre}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

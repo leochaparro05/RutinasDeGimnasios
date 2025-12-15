@@ -6,8 +6,15 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlmodel import select
 
-from .models import DiaSemana, Ejercicio, Rutina
-from .schemas import EjercicioCreate, EjercicioUpdate, RutinaCreate, RutinaUpdate
+from .models import DiaSemana, Ejercicio, Rutina, Planificacion
+from .schemas import (
+    EjercicioCreate,
+    EjercicioUpdate,
+    PlanificacionCreate,
+    PlanificacionUpdate,
+    RutinaCreate,
+    RutinaUpdate,
+)
 
 
 class UniqueNameError(Exception):
@@ -226,5 +233,39 @@ def obtener_estadisticas(session: Session) -> dict:
         "top_rutinas": top_rutinas,
         "dias_mas_entrenados": dias_mas_entrenados,
     }
+
+
+# Planificaciones (calendario)
+def listar_planificaciones(session: Session) -> List[Planificacion]:
+    return session.exec(select(Planificacion).order_by(Planificacion.fecha)).all()
+
+
+def obtener_plan_por_fecha(session: Session, fecha) -> Optional[Planificacion]:
+    stmt = select(Planificacion).where(Planificacion.fecha == fecha)
+    return session.exec(stmt).first()
+
+
+def crear_planificacion(session: Session, data: PlanificacionCreate) -> Planificacion:
+    plan = Planificacion(fecha=data.fecha, rutina_id=data.rutina_id)
+    session.add(plan)
+    session.commit()
+    session.refresh(plan)
+    return plan
+
+
+def actualizar_planificacion(session: Session, plan: Planificacion, data: PlanificacionUpdate) -> Planificacion:
+    if data.fecha is not None:
+        plan.fecha = data.fecha
+    if data.rutina_id is not None:
+        plan.rutina_id = data.rutina_id
+    session.add(plan)
+    session.commit()
+    session.refresh(plan)
+    return plan
+
+
+def eliminar_planificacion(session: Session, plan: Planificacion) -> None:
+    session.delete(plan)
+    session.commit()
 
 

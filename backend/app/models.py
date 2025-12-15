@@ -1,8 +1,9 @@
-from datetime import datetime
+from datetime import datetime, date
 from enum import Enum
 from typing import List, Optional
 
 from sqlmodel import Column, DateTime, Field, Relationship, SQLModel
+from sqlalchemy import Date
 
 
 class DiaSemana(str, Enum):
@@ -53,5 +54,17 @@ class Rutina(SQLModel, table=True):
         back_populates="rutina",
         sa_relationship_kwargs={"cascade": "all, delete-orphan"},
     )
+
+
+class Planificacion(SQLModel, table=True):
+    """Asignación de una rutina a una fecha específica (calendario)."""
+
+    __tablename__ = "planificaciones"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    fecha: date = Field(sa_column=Column(Date, index=True, unique=True))
+    rutina_id: int = Field(foreign_key="rutinas.id")
+
+    rutina: Optional[Rutina] = Relationship()
 
 
