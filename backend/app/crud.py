@@ -193,3 +193,38 @@ def duplicar_rutina(session: Session, rutina_id: int, nuevo_nombre: Optional[str
     return copia
 
 
+def obtener_estadisticas(session: Session) -> dict:
+    """Calcula estadísticas básicas de uso de rutinas/ejercicios."""
+    total_rutinas = session.exec(select(func.count()).select_from(Rutina)).one()
+    total_ejercicios = session.exec(select(func.count()).select_from(Ejercicio)).one()
+
+    # Top rutinas por cantidad de ejercicios (máximo 5)
+    top_stmt = (
+        select(Rutina.id, Rutina.nombre, func.count(Ejercicio.id).label("ejercicios"))
+        .join(Ejercicio, Ejercicio.rutina_id == Rutina.id)
+        .group_by(Rutina.id, Rutina.nombre)
+        .order_by(func.count(Ejercicio.id).desc(), Rutina.nombre)
+        .limit(5)
+    )
+    top_rutinas = [
+        {"id": r.id, "nombre": r.nombre, "ejercicios": r.ejercicios} for r in session.exec(top_stmt)
+    ]
+
+    # Días más entrenados (conteo de ejercicios por día)
+    dias_stmt = (
+        select(Ejercicio.dia_semana, func.count(Ejercicio.id).label("ejercicios"))
+        .group_by(Ejercicio.dia_semana)
+        .order_by(func.count(Ejercicio.id).desc())
+    )
+    dias_mas_entrenados = [
+        {"dia_semana": r.dia_semana, "ejercicios": r.ejercicios} for r in session.exec(dias_stmt)
+    ]
+
+    return {
+        "total_rutinas": total_rutinas,
+        "total_ejercicios": total_ejercicios,
+        "top_rutinas": top_rutinas,
+        "dias_mas_entrenados": dias_mas_entrenados,
+    }
+
+

@@ -5,6 +5,7 @@ import {
   deleteEjercicio,
   deleteRutina,
   fetchRutinas,
+  fetchStats,
   searchRutinas,
   updateEjercicio,
   updateRutina,
@@ -48,6 +49,8 @@ function App() {
   const pageSize = 10;
   const [filtroDia, setFiltroDia] = useState("");
   const [filtroEjercicio, setFiltroEjercicio] = useState("");
+  const [stats, setStats] = useState(null);
+  const [activeTab, setActiveTab] = useState("listar"); // listar | crear | estadisticas
 
   // Agrupa ejercicios por día para mostrarlos ordenados
   const ejerciciosPorDia = (ejercicios) =>
@@ -92,6 +95,7 @@ function App() {
 
   useEffect(() => {
     cargarRutinas();
+    cargarStats();
   }, []);
 
   // Búsqueda en vivo por nombre
@@ -274,70 +278,101 @@ function App() {
     setPage(1);
   };
 
+  const cargarStats = async () => {
+    try {
+      const resp = await fetchStats();
+      setStats(resp.data);
+    } catch (e) {
+      // Si falla, no bloquea la app; solo deja stats en null
+      setStats(null);
+    }
+  };
+
   return (
     <div className="container">
       <div className="header">
         <div>
           <h1 className="title">Rutinas de Gimnasio</h1>
-          <p className="muted">CRUD + búsqueda en vivo</p>
+          <p className="muted">CRUD + búsqueda, filtros y estadísticas</p>
         </div>
-        <div className="grid" style={{ minWidth: 240, gap: 8 }}>
-          <input
-            placeholder="Buscar por nombre..."
-            value={busqueda}
-            onChange={(e) => buscar(e.target.value)}
-          />
-          <div className="row" style={{ gap: 8 }}>
-            <select
-              value={filtroDia}
-              onChange={(e) => {
-                setFiltroDia(e.target.value);
-                setPage(1);
-              }}
-            >
-              <option value="">Todos los días</option>
-              {dias.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
+        {activeTab === "listar" && (
+          <div className="grid" style={{ minWidth: 280, gap: 8 }}>
             <input
-              placeholder="Filtro por ejercicio"
-              value={filtroEjercicio}
-              onChange={(e) => {
-                setFiltroEjercicio(e.target.value);
-                setPage(1);
-              }}
+              placeholder="Buscar por nombre..."
+              value={busqueda}
+              onChange={(e) => buscar(e.target.value)}
             />
+            <div className="row" style={{ gap: 8 }}>
+              <select
+                value={filtroDia}
+                onChange={(e) => {
+                  setFiltroDia(e.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="">Todos los días</option>
+                {dias.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+              <input
+                placeholder="Filtro por ejercicio"
+                value={filtroEjercicio}
+                onChange={(e) => {
+                  setFiltroEjercicio(e.target.value);
+                  setPage(1);
+                }}
+              />
+            </div>
+            <button className="secondary" type="button" onClick={limpiarFiltros}>
+              Limpiar filtros
+            </button>
           </div>
-          <button className="secondary" type="button" onClick={limpiarFiltros}>
-            Limpiar filtros
-          </button>
-        </div>
+        )}
       </div>
 
       {error && <p style={{ color: "#dc2626" }}>{error}</p>}
 
-      <div className="grid grid-2" style={{ marginTop: 16 }}>
-        {/* Columna: Crear rutina */}
-        <div className="card">
+      {/* Tabs */}
+      <div className="tabs">
+        {[
+          { id: "listar", label: "Listar" },
+          { id: "crear", label: "Crear" },
+          { id: "estadisticas", label: "Estadísticas" },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            className={`tab ${activeTab === tab.id ? "active" : ""}`}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Contenido por pestaña */}
+      {activeTab === "crear" && (
+        <div className="card" style={{ marginTop: 12 }}>
           <h3 className="title">Crear rutina</h3>
           <form className="grid" onSubmit={submitRutina}>
-            <div>
-              <label>Nombre</label>
-              <input
-                required
-                value={formRutina.nombre}
-                onChange={(e) => setFormRutina({ ...formRutina, nombre: e.target.value })}
-              />
-            </div>
-            <div>
-              <label>Descripción</label>
-              <textarea
-                value={formRutina.descripcion}
-                onChange={(e) => setFormRutina({ ...formRutina, descripcion: e.target.value })}
-              />
+            <div className="row">
+              <div style={{ flex: 1 }}>
+                <label>Nombre</label>
+                <input
+                  required
+                  value={formRutina.nombre}
+                  onChange={(e) => setFormRutina({ ...formRutina, nombre: e.target.value })}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label>Descripción</label>
+                <textarea
+                  value={formRutina.descripcion}
+                  onChange={(e) => setFormRutina({ ...formRutina, descripcion: e.target.value })}
+                />
+              </div>
             </div>
             <div className="grid" style={{ gap: 12 }}>
               <div className="space-between">
@@ -446,9 +481,10 @@ function App() {
             </button>
           </form>
         </div>
+      )}
 
-        {/* Columna: Listado de rutinas */}
-        <div className="card">
+      {activeTab === "listar" && (
+        <div className="card" style={{ marginTop: 12 }}>
           <div className="space-between">
             <h3 className="title">Rutinas ({total})</h3>
             <button className="secondary" onClick={cargarRutinas}>
@@ -779,7 +815,55 @@ function App() {
             </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {activeTab === "estadisticas" && (
+        <div className="card" style={{ marginTop: 12 }}>
+          <div className="space-between">
+            <div>
+              <h3 className="title">Estadísticas</h3>
+              <p className="muted">Totales, top rutinas y días más entrenados</p>
+            </div>
+            <button className="secondary" onClick={cargarStats}>
+              Refrescar
+            </button>
+          </div>
+          {stats ? (
+            <div className="grid" style={{ gap: 12 }}>
+              <div className="card" style={{ background: "#f8fafc" }}>
+                <strong>Totales</strong>
+                <p className="muted">
+                  Rutinas: {stats.total_rutinas} — Ejercicios: {stats.total_ejercicios}
+                </p>
+              </div>
+              <div className="card" style={{ background: "#f0f9ff" }}>
+                <strong>Top rutinas (por ejercicios)</strong>
+                <ul>
+                  {stats.top_rutinas.map((r) => (
+                    <li key={r.id}>
+                      {r.nombre} ({r.ejercicios})
+                    </li>
+                  ))}
+                  {stats.top_rutinas.length === 0 && <li className="muted">Sin datos</li>}
+                </ul>
+              </div>
+              <div className="card" style={{ background: "#fff7ed" }}>
+                <strong>Días más entrenados</strong>
+                <ul>
+                  {stats.dias_mas_entrenados.map((d) => (
+                    <li key={d.dia_semana}>
+                      {d.dia_semana}: {d.ejercicios}
+                    </li>
+                  ))}
+                  {stats.dias_mas_entrenados.length === 0 && <li className="muted">Sin datos</li>}
+                </ul>
+              </div>
+            </div>
+          ) : (
+            <p className="muted">No se pudieron cargar las estadísticas.</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

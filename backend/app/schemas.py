@@ -116,3 +116,21 @@ class RutinaDuplicatePayload(BaseModel):
     nombre: Optional[str] = None
 
 
+class EstadisticaRutina(BaseModel):
+    id: int
+    nombre: str
+    ejercicios: int
+
+
+class EstadisticaDia(BaseModel):
+    dia_semana: DiaSemana
+    ejercicios: int
+
+
+class EstadisticasResponse(BaseModel):
+    total_rutinas: int
+    total_ejercicios: int
+    top_rutinas: List[EstadisticaRutina]
+    dias_mas_entrenados: List[EstadisticaDia]
+
+

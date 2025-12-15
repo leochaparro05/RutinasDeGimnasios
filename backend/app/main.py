@@ -10,10 +10,11 @@ from .schemas import (
     EjercicioRead,
     EjercicioUpdate,
     RutinaCreate,
+    RutinaDuplicatePayload,
     RutinaListResponse,
     RutinaRead,
     RutinaUpdate,
-    RutinaDuplicatePayload,
+    EstadisticasResponse,
 )
 
 # Configuración base de la aplicación FastAPI
@@ -118,6 +119,12 @@ def duplicar_rutina(
 ) -> Rutina:
     """Duplicar una rutina y sus ejercicios; permite opcionalmente renombrarla."""
     return crud.duplicar_rutina(session, rutina_id, nuevo_nombre=data.nombre if data else None)
+
+
+@app.get("/api/estadisticas", response_model=EstadisticasResponse)
+def obtener_estadisticas(session: Session = Depends(get_session)) -> EstadisticasResponse:
+    """Estadísticas básicas: totales, top rutinas y días más entrenados."""
+    return crud.obtener_estadisticas(session)
 
 
 @app.delete("/api/rutinas/{rutina_id}", status_code=status.HTTP_204_NO_CONTENT)
