@@ -14,6 +14,7 @@ import {
   createPlanificacion,
   updatePlanificacion,
   deletePlanificacion,
+  exportRutinas,
 } from "./api";
 
 // Días disponibles (para selects)
@@ -1012,6 +1013,55 @@ function App() {
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {activeTab === "listar" && (
+        <div className="card" style={{ marginTop: 12 }}>
+          <div className="space-between">
+            <strong>Exportar rutinas</strong>
+            <div className="row">
+              <button
+                className="secondary"
+                type="button"
+                onClick={async () => {
+                  try {
+                    const resp = await exportRutinas("csv");
+                    const blob = new Blob([resp.data], { type: "text/csv" });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "rutinas.csv";
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                  } catch (e) {
+                    setError("No se pudo exportar CSV");
+                  }
+                }}
+              >
+                CSV
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const resp = await exportRutinas("pdf");
+                    const blob = new Blob([resp.data], { type: "application/pdf" });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "rutinas.pdf";
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                  } catch (e) {
+                    setError("No se pudo exportar PDF");
+                  }
+                }}
+              >
+                PDF
+              </button>
+            </div>
           </div>
         </div>
       )}

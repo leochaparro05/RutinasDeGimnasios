@@ -19,6 +19,8 @@ export const fetchPlanificaciones = () => api.get("/api/planificaciones");
 export const createPlanificacion = (data) => api.post("/api/planificaciones", data);
 export const updatePlanificacion = (id, data) => api.put(`/api/planificaciones/${id}`, data);
 export const deletePlanificacion = (id) => api.delete(`/api/planificaciones/${id}`);
+export const exportRutinas = (formato = "csv") =>
+  api.get("/api/rutinas/export", { params: { formato }, responseType: "blob" });
 
 // Endpoints de ejercicios
 export const addEjercicio = (rutinaId, data) =>

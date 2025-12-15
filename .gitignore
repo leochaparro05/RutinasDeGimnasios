@@ -1,0 +1,18 @@
+# entornos virtuales
+venv/
+backend/venv/
+
+# dependencias frontend
+node_modules/
+frontend/node_modules/
+
+# cache / python
+__pycache__/
+*.pyc
+
+# variables de entorno
+.env
+
+# sistema / editor
+.DS_Store
+

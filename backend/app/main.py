@@ -1,6 +1,10 @@
 from fastapi import Depends, FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
+import io
+import csv
+from fpdf import FPDF
 
 from . import crud
 from .database import get_session, init_db
@@ -78,6 +82,125 @@ def buscar_rutinas(
 ) -> list[Rutina]:
     """Búsqueda parcial por nombre (case-insensitive)."""
     return crud.buscar_rutinas(session, nombre)
+
+    # Exportar rutinas
+def _fetch_rutinas_completas(session: Session) -> list[Rutina]:
+    statement = session.query(Rutina).all()  # type: ignore
+    return statement
+
+
+@app.get("/api/rutinas/export")
+def exportar_rutinas(
+    formato: str = Query("csv", pattern="^(csv|pdf)$"),
+    session: Session = Depends(get_session),
+):
+    rutinas = _fetch_rutinas_completas(session)
+
+    if formato == "csv":
+        buffer = io.StringIO()
+        writer = csv.writer(buffer)
+        writer.writerow(
+            ["rutina_id", "nombre", "descripcion", "creado_en", "ejercicio", "dia", "series", "repeticiones", "peso", "notas", "orden"]
+        )
+        for r in rutinas:
+            for ej in r.ejercicios:
+                writer.writerow(
+                    [
+                        r.id,
+                        r.nombre,
+                        r.descripcion or "",
+                        r.creado_en,
+                        ej.nombre,
+                        ej.dia_semana,
+                        ej.series,
+                        ej.repeticiones,
+                        ej.peso or "",
+                        ej.notas or "",
+                        ej.orden or "",
+                    ]
+                )
+            if not r.ejercicios:
+                writer.writerow([r.id, r.nombre, r.descripcion or "", r.creado_en, "", "", "", "", "", "", ""])
+        buffer.seek(0)
+        return StreamingResponse(
+            iter([buffer.getvalue()]),
+            media_type="text/csv",
+            headers={"Content-Disposition": 'attachment; filename="rutinas.csv"'},
+        )
+
+    # PDF
+    try:
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_auto_page_break(auto=True, margin=12)
+        pdf.set_font("Arial", "B", 16)
+        pdf.cell(0, 10, "Rutinas de Gimnasio", ln=1)
+        pdf.set_font("Arial", "", 11)
+
+        for r in rutinas:
+            pdf.set_text_color(30, 64, 175)
+            pdf.cell(0, 8, f"Rutina: {r.nombre} (ID {r.id})", ln=1)
+            pdf.set_text_color(51, 65, 85)
+            if r.descripcion:
+                pdf.multi_cell(0, 6, f"Desc: {r.descripcion}")
+            pdf.set_text_color(15, 23, 42)
+            if r.ejercicios:
+                for ej in r.ejercicios:
+                    linea = f"- {ej.dia_semana}: {ej.nombre} {ej.series}x{ej.repeticiones}"
+                    if ej.peso:
+                        linea += f" @ {ej.peso}kg"
+                    if ej.orden:
+                        linea += f" (orden {ej.orden})"
+                    pdf.cell(0, 6, linea, ln=1)
+                    if ej.notas:
+                        pdf.set_text_color(100, 116, 139)
+                        pdf.multi_cell(0, 5, f"  Notas: {ej.notas}")
+                        pdf.set_text_color(15, 23, 42)
+            else:
+                pdf.cell(0, 6, "Sin ejercicios", ln=1)
+            pdf.ln(4)
+
+        pdf_output = pdf.output(dest="S")
+        pdf_bytes = pdf_output if isinstance(pdf_output, (bytes, bytearray)) else pdf_output.encode(
+            "latin-1", "ignore"
+        )
+        return StreamingResponse(
+            io.BytesIO(pdf_bytes),
+            media_type="application/pdf",
+            headers={"Content-Disposition": 'attachment; filename="rutinas.pdf"'},
+        )
+    except Exception as exc:  # fallback a CSV si falla el PDF
+        print(f"[EXPORT PDF] Error generando PDF: {exc}")
+        buffer = io.StringIO()
+        writer = csv.writer(buffer)
+        writer.writerow(
+            ["rutina_id", "nombre", "descripcion", "creado_en", "ejercicio", "dia", "series", "repeticiones", "peso", "notas", "orden"]
+        )
+        for r in rutinas:
+            for ej in r.ejercicios:
+                writer.writerow(
+                    [
+                        r.id,
+                        r.nombre,
+                        r.descripcion or "",
+                        r.creado_en,
+                        ej.nombre,
+                        ej.dia_semana,
+                        ej.series,
+                        ej.repeticiones,
+                        ej.peso or "",
+                        ej.notas or "",
+                        ej.orden or "",
+                    ]
+                )
+            if not r.ejercicios:
+                writer.writerow([r.id, r.nombre, r.descripcion or "", r.creado_en, "", "", "", "", "", "", ""])
+        buffer.seek(0)
+        return StreamingResponse(
+            iter([buffer.getvalue()]),
+            media_type="text/csv",
+            headers={"Content-Disposition": 'attachment; filename="rutinas_fallback.csv"'},
+        )
 
 
 @app.get("/api/rutinas/{rutina_id}", response_model=RutinaRead)
@@ -166,6 +289,86 @@ def eliminar_planificacion(plan_id: int, session: Session = Depends(get_session)
     if not plan:
         raise HTTPException(status_code=404, detail="Planificación no encontrada")
     crud.eliminar_planificacion(session, plan)
+
+
+
+
+
+@app.get("/api/rutinas/export")
+def exportar_rutinas(
+    formato: str = Query("csv", pattern="^(csv|pdf)$"),
+    session: Session = Depends(get_session),
+):
+    rutinas = _fetch_rutinas_completas(session)
+
+    if formato == "csv":
+        buffer = io.StringIO()
+        writer = csv.writer(buffer)
+        writer.writerow(
+            ["rutina_id", "nombre", "descripcion", "creado_en", "ejercicio", "dia", "series", "repeticiones", "peso", "notas", "orden"]
+        )
+        for r in rutinas:
+            for ej in r.ejercicios:
+                writer.writerow(
+                    [
+                        r.id,
+                        r.nombre,
+                        r.descripcion or "",
+                        r.creado_en,
+                        ej.nombre,
+                        ej.dia_semana,
+                        ej.series,
+                        ej.repeticiones,
+                        ej.peso or "",
+                        ej.notas or "",
+                        ej.orden or "",
+                    ]
+                )
+            if not r.ejercicios:
+                writer.writerow([r.id, r.nombre, r.descripcion or "", r.creado_en, "", "", "", "", "", "", ""])
+        buffer.seek(0)
+        return StreamingResponse(
+            iter([buffer.getvalue()]),
+            media_type="text/csv",
+            headers={"Content-Disposition": 'attachment; filename="rutinas.csv"'},
+        )
+
+    # PDF
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(0, 10, "Rutinas de Gimnasio", ln=1)
+    pdf.set_font("Arial", "", 11)
+
+    for r in rutinas:
+        pdf.set_text_color(30, 64, 175)
+        pdf.cell(0, 8, f"Rutina: {r.nombre} (ID {r.id})", ln=1)
+        pdf.set_text_color(51, 65, 85)
+        if r.descripcion:
+            pdf.multi_cell(0, 6, f"Desc: {r.descripcion}")
+        pdf.set_text_color(15, 23, 42)
+        if r.ejercicios:
+            for ej in r.ejercicios:
+                linea = f"- {ej.dia_semana}: {ej.nombre} {ej.series}x{ej.repeticiones}"
+                if ej.peso:
+                    linea += f" @ {ej.peso}kg"
+                if ej.orden:
+                    linea += f" (orden {ej.orden})"
+                pdf.cell(0, 6, linea, ln=1)
+                if ej.notas:
+                    pdf.set_text_color(100, 116, 139)
+                    pdf.multi_cell(0, 5, f"  Notas: {ej.notas}")
+                    pdf.set_text_color(15, 23, 42)
+        else:
+            pdf.cell(0, 6, "Sin ejercicios", ln=1)
+        pdf.ln(4)
+
+    pdf_bytes = pdf.output(dest="S").encode("latin-1")
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": 'attachment; filename="rutinas.pdf"'},
+    )
 
 
 @app.delete("/api/rutinas/{rutina_id}", status_code=status.HTTP_204_NO_CONTENT)
