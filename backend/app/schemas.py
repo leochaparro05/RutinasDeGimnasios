@@ -110,3 +110,9 @@ class RutinaListResponse(BaseModel):
     offset: int
 
 
+class RutinaDuplicatePayload(BaseModel):
+    """Payload opcional para duplicar una rutina con un nombre personalizado."""
+
+    nombre: Optional[str] = None
+
+

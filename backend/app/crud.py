@@ -1,5 +1,6 @@
 from typing import List, Optional, Tuple
 
+from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -147,5 +148,48 @@ def eliminar_ejercicio(session: Session, ejercicio: Ejercicio) -> None:
     """Borra un ejercicio."""
     session.delete(ejercicio)
     session.commit()
+
+
+def _generar_nombre_copia(session: Session, nombre_base: str) -> str:
+    """
+    Genera un nombre único para la copia.
+    Ej: "Piernas" -> "Piernas (copia)" -> "Piernas (copia 2)" ...
+    """
+    candidato = f"{nombre_base} (copia)"
+    contador = 2
+    while session.exec(select(Rutina).where(Rutina.nombre == candidato)).first():
+        candidato = f"{nombre_base} (copia {contador})"
+        contador += 1
+    return candidato
+
+
+def duplicar_rutina(session: Session, rutina_id: int, nuevo_nombre: Optional[str]) -> Rutina:
+    """Duplica una rutina y todos sus ejercicios."""
+    original = session.get(Rutina, rutina_id)
+    if not original:
+        raise HTTPException(status_code=404, detail="Rutina no encontrada")  # type: ignore
+
+    nombre_copia = nuevo_nombre or _generar_nombre_copia(session, original.nombre)
+    copia = Rutina(nombre=nombre_copia, descripcion=original.descripcion)
+    session.add(copia)
+    session.commit()
+    session.refresh(copia)
+
+    # Copiar ejercicios asociados
+    for ej in original.ejercicios:
+        nuevo_ej = Ejercicio(
+            rutina_id=copia.id,
+            nombre=ej.nombre,
+            dia_semana=ej.dia_semana,
+            series=ej.series,
+            repeticiones=ej.repeticiones,
+            peso=ej.peso,
+            notas=ej.notas,
+            orden=ej.orden,
+        )
+        session.add(nuevo_ej)
+    session.commit()
+    session.refresh(copia)
+    return copia
 
 

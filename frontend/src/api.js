@@ -12,6 +12,8 @@ export const searchRutinas = (nombre) => api.get("/api/rutinas/buscar", { params
 export const createRutina = (data) => api.post("/api/rutinas", data);
 export const updateRutina = (id, data) => api.put(`/api/rutinas/${id}`, data);
 export const deleteRutina = (id) => api.delete(`/api/rutinas/${id}`);
+export const duplicateRutina = (id, nombre) =>
+  api.post(`/api/rutinas/${id}/duplicar`, nombre ? { nombre } : {});
 
 // Endpoints de ejercicios
 export const addEjercicio = (rutinaId, data) =>

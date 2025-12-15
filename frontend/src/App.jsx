@@ -8,6 +8,7 @@ import {
   searchRutinas,
   updateEjercicio,
   updateRutina,
+  duplicateRutina,
 } from "./api";
 
 // Días disponibles (para selects)
@@ -238,6 +239,19 @@ function App() {
     }
   };
 
+  const duplicarRutinaHandler = async (rutina) => {
+    const nuevo = prompt(
+      "Nombre opcional para la copia (deja vacío para generar uno automáticamente):",
+      `${rutina.nombre} (copia)`
+    );
+    try {
+      await duplicateRutina(rutina.id, nuevo || undefined);
+      await cargarRutinas();
+    } catch (e) {
+      setError(e.response?.data?.detail || "No se pudo duplicar la rutina");
+    }
+  };
+
   // Preprocesar rutinas para agrupar por día
   const rutinasConDias = useMemo(
     () =>
@@ -451,6 +465,9 @@ function App() {
                     <p className="muted">{rutina.descripcion || "Sin descripción"}</p>
                   </div>
                   <div className="row">
+                    <button className="secondary" onClick={() => duplicarRutinaHandler(rutina)}>
+                      Duplicar
+                    </button>
                     <button className="secondary" onClick={() => actualizarRutinaNombre(rutina)}>
                       Renombrar
                     </button>

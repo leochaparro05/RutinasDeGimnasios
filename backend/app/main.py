@@ -13,6 +13,7 @@ from .schemas import (
     RutinaListResponse,
     RutinaRead,
     RutinaUpdate,
+    RutinaDuplicatePayload,
 )
 
 # Configuración base de la aplicación FastAPI
@@ -109,6 +110,14 @@ def actualizar_rutina(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Ya existe una rutina con ese nombre"
         )
+
+
+@app.post("/api/rutinas/{rutina_id}/duplicar", response_model=RutinaRead, status_code=201)
+def duplicar_rutina(
+    rutina_id: int, data: RutinaDuplicatePayload | None = None, session: Session = Depends(get_session)
+) -> Rutina:
+    """Duplicar una rutina y sus ejercicios; permite opcionalmente renombrarla."""
+    return crud.duplicar_rutina(session, rutina_id, nuevo_nombre=data.nombre if data else None)
 
 
 @app.delete("/api/rutinas/{rutina_id}", status_code=status.HTTP_204_NO_CONTENT)
