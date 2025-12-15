@@ -45,6 +45,8 @@ function App() {
   const [editandoEjercicio, setEditandoEjercicio] = useState(null);
   const [page, setPage] = useState(1);
   const pageSize = 10;
+  const [filtroDia, setFiltroDia] = useState("");
+  const [filtroEjercicio, setFiltroEjercicio] = useState("");
 
   // Agrupa ejercicios por día para mostrarlos ordenados
   const ejerciciosPorDia = (ejercicios) =>
@@ -62,7 +64,12 @@ function App() {
     setError("");
     try {
       const offset = (page - 1) * pageSize;
-      const resp = await fetchRutinas({ limit: pageSize, offset });
+      const resp = await fetchRutinas({
+        limit: pageSize,
+        offset,
+        dia_semana: filtroDia || undefined,
+        ejercicio: filtroEjercicio || undefined,
+      });
       const items = resp?.data?.items ?? resp?.data ?? [];
       const totalResp = resp?.data?.total ?? items.length ?? 0;
       setRutinas(items);
@@ -80,7 +87,7 @@ function App() {
     if (!busqueda) {
       cargarRutinas();
     }
-  }, [page]);
+  }, [page, filtroDia, filtroEjercicio]);
 
   useEffect(() => {
     cargarRutinas();
@@ -247,6 +254,12 @@ function App() {
     setPage(nueva);
   };
 
+  const limpiarFiltros = () => {
+    setFiltroDia("");
+    setFiltroEjercicio("");
+    setPage(1);
+  };
+
   return (
     <div className="container">
       <div className="header">
@@ -254,12 +267,39 @@ function App() {
           <h1 className="title">Rutinas de Gimnasio</h1>
           <p className="muted">CRUD + búsqueda en vivo</p>
         </div>
-        <div style={{ minWidth: 240 }}>
+        <div className="grid" style={{ minWidth: 240, gap: 8 }}>
           <input
             placeholder="Buscar por nombre..."
             value={busqueda}
             onChange={(e) => buscar(e.target.value)}
           />
+          <div className="row" style={{ gap: 8 }}>
+            <select
+              value={filtroDia}
+              onChange={(e) => {
+                setFiltroDia(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="">Todos los días</option>
+              {dias.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </select>
+            <input
+              placeholder="Filtro por ejercicio"
+              value={filtroEjercicio}
+              onChange={(e) => {
+                setFiltroEjercicio(e.target.value);
+                setPage(1);
+              }}
+            />
+          </div>
+          <button className="secondary" type="button" onClick={limpiarFiltros}>
+            Limpiar filtros
+          </button>
         </div>
       </div>
 

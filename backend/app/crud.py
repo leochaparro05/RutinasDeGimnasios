@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlmodel import select
 
-from .models import Ejercicio, Rutina
+from .models import DiaSemana, Ejercicio, Rutina
 from .schemas import EjercicioCreate, EjercicioUpdate, RutinaCreate, RutinaUpdate
 
 
@@ -13,11 +13,38 @@ class UniqueNameError(Exception):
     """Se lanza cuando el nombre de rutina ya existe."""
 
 
-def listar_rutinas(session: Session, limit: int, offset: int) -> Tuple[List[Rutina], int]:
-    """Devuelve rutinas con paginación y el total para UI."""
-    statement = select(Rutina).order_by(Rutina.creado_en.desc()).offset(offset).limit(limit)
-    items = session.exec(statement).all()
-    total = session.exec(select(func.count()).select_from(Rutina)).one()
+def listar_rutinas(
+    session: Session,
+    limit: int,
+    offset: int,
+    dia_semana: Optional[DiaSemana] = None,
+    ejercicio_nombre: Optional[str] = None,
+) -> Tuple[List[Rutina], int]:
+    """Devuelve rutinas con paginación y el total para UI, con filtros opcionales."""
+
+    stmt = select(Rutina)
+    # Si hay filtros por ejercicio/día, hacemos join con ejercicios
+    if dia_semana or ejercicio_nombre:
+        stmt = stmt.join(Ejercicio)
+        if dia_semana:
+            stmt = stmt.where(Ejercicio.dia_semana == dia_semana)
+        if ejercicio_nombre:
+            stmt = stmt.where(Ejercicio.nombre.ilike(f"%{ejercicio_nombre}%"))
+        stmt = stmt.distinct()
+
+    stmt = stmt.order_by(Rutina.creado_en.desc()).offset(offset).limit(limit)
+    items = session.exec(stmt).all()
+
+    # Conteo total respetando filtros
+    count_stmt = select(func.count(func.distinct(Rutina.id)))
+    if dia_semana or ejercicio_nombre:
+        count_stmt = count_stmt.join(Ejercicio)
+        if dia_semana:
+            count_stmt = count_stmt.where(Ejercicio.dia_semana == dia_semana)
+        if ejercicio_nombre:
+            count_stmt = count_stmt.where(Ejercicio.nombre.ilike(f"%{ejercicio_nombre}%"))
+
+    total = session.exec(count_stmt).one()
     return items, total
 
 

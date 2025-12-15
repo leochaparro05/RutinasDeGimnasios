@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from . import crud
 from .database import get_session, init_db
-from .models import Ejercicio, Rutina
+from .models import DiaSemana, Ejercicio, Rutina
 from .schemas import (
     EjercicioCreate,
     EjercicioRead,
@@ -51,10 +51,18 @@ def health_check():
 def listar_rutinas(
     limit: int = Query(10, ge=1, le=100),
     offset: int = Query(0, ge=0),
+    dia_semana: DiaSemana | None = Query(None),
+    ejercicio: str | None = Query(None, min_length=1),
     session: Session = Depends(get_session),
 ) -> RutinaListResponse:
-    """Listar rutinas con paginación (limit/offset)."""
-    items, total = crud.listar_rutinas(session, limit=limit, offset=offset)
+    """Listar rutinas con paginación (limit/offset) y filtros opcionales."""
+    items, total = crud.listar_rutinas(
+        session,
+        limit=limit,
+        offset=offset,
+        dia_semana=dia_semana,
+        ejercicio_nombre=ejercicio,
+    )
     return {"items": items, "total": total, "limit": limit, "offset": offset}
 
 
