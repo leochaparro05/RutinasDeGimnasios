@@ -1,6 +1,6 @@
 # Frontend - Rutinas de Gimnasio
 
-SPA en React + Vite para gestionar rutinas y ejercicios consumiendo el backend FastAPI.
+SPA en React + Vite que consume la API FastAPI: CRUD de rutinas/ejercicios, búsqueda, filtros, duplicado, drag & drop, estadísticas, calendario y exportacion de rutinas en csv o pdf.
 
 ## Requisitos previos
 - Node.js 18+
@@ -13,29 +13,30 @@ npm install
 ```
 
 ## Configuración
-Define la URL del backend mediante variable de entorno Vite:
+- URL del backend (Vite env):
 ```
 VITE_API_URL=http://localhost:8000
 ```
-Puedes crear un archivo `.env` en `frontend/` con esa línea.
+- Crear `.env` en `frontend/` con esa línea o exportarla en la sesión antes de `npm run dev`.
 
 ## Ejecución
 - Desarrollo: `npm run dev` (puerto 5173 por defecto)
-- Producción: `npm run build` y luego `npm run preview`
+- Producción: `npm run build`
+- Previsualizar build: `npm run preview`
 
-## Tecnologías usadas
+## Tecnologías utilizadas
 - React 18
 - Vite 5
 - Axios
 
-## Estructura
+## Estructura del proyecto
 ```
 frontend/
   src/
-    App.jsx       # UI principal y lógica CRUD
-    api.js        # Cliente Axios
-    main.jsx      # Render raíz
-    styles.css    # Estilos básicos
+    App.jsx     # UI principal: tabs (Listar/Crear/Estadísticas/Calendario), filtros, drag & drop
+    api.js      # Cliente Axios y funciones de exportación/planificación
+    main.jsx    # Render raíz
+    styles.css  # Estilos y temas
   vite.config.js
   package.json
   index.html
