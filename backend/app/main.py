@@ -23,6 +23,7 @@ from .schemas import (
     PlanificacionRead,
     PlanificacionUpdate,
 )
+""" endpoints principales. """
 
 # Configuración base de la aplicación FastAPI
 app = FastAPI(title="API de Rutinas de Gimnasio", version="1.0.0")
@@ -83,11 +84,12 @@ def buscar_rutinas(
     """Búsqueda parcial por nombre (case-insensitive)."""
     return crud.buscar_rutinas(session, nombre)
 
-    # Exportar rutinas
+"""Obtiene todas las rutinas con sus ejercicios relacionados para exportación."""
 def _fetch_rutinas_completas(session: Session) -> list[Rutina]:
     statement = session.query(Rutina).all()  # type: ignore
     return statement
 
+""" Exportar rutinas en formato csv o pdf """
 
 @app.get("/api/rutinas/export")
 def exportar_rutinas(
@@ -252,8 +254,7 @@ def obtener_estadisticas(session: Session = Depends(get_session)) -> Estadistica
     """Estadísticas básicas: totales, top rutinas y días más entrenados."""
     return crud.obtener_estadisticas(session)
 
-
-# Planificaciones (calendario)
+"""Lista todas las planificaciones (rutinas programadas en fechas), con sus rutinas asociadas."""
 @app.get("/api/planificaciones", response_model=list[PlanificacionRead])
 def listar_planificaciones(session: Session = Depends(get_session)) -> list[PlanificacionRead]:
     return crud.listar_planificaciones(session)
@@ -271,6 +272,7 @@ def crear_planificacion(data: PlanificacionCreate, session: Session = Depends(ge
     return crud.crear_planificacion(session, data)
 
 
+"""Actualiza parcialmente una planificación: fecha y/o rutina asociada."""
 @app.put("/api/planificaciones/{plan_id}", response_model=PlanificacionRead)
 def actualizar_planificacion(
     plan_id: int, data: PlanificacionUpdate, session: Session = Depends(get_session)
@@ -282,7 +284,7 @@ def actualizar_planificacion(
         raise HTTPException(status_code=404, detail="Rutina no encontrada")
     return crud.actualizar_planificacion(session, plan, data)
 
-
+"""Elimina una planificación del calendario sin afectar la rutina original."""
 @app.delete("/api/planificaciones/{plan_id}", status_code=204)
 def eliminar_planificacion(plan_id: int, session: Session = Depends(get_session)) -> None:
     plan = session.get(Planificacion, plan_id)

@@ -5,6 +5,7 @@ from typing import List, Optional
 from sqlmodel import Column, DateTime, Field, Relationship, SQLModel
 from sqlalchemy import Date
 
+""" Modelos y validacionesde la base de datos """
 
 class DiaSemana(str, Enum):
     """Enum restringido a los días válidos."""

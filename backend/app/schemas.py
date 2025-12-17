@@ -6,6 +6,8 @@ from pydantic import BaseModel, Field, validator
 
 from .models import DiaSemana
 
+""" Esquemas Pydantic para la API """
+""" validaciones básicas de negocio """
 
 class EjercicioBase(BaseModel):
     """Campos comunes para crear/leer ejercicios."""
@@ -116,39 +118,39 @@ class RutinaDuplicatePayload(BaseModel):
 
     nombre: Optional[str] = None
 
-
+""" Representa una rutina en el resumen de estadísticas, con su conteo de ejercicios."""
 class EstadisticaRutina(BaseModel):
     id: int
     nombre: str
     ejercicios: int
 
-
+""" Agrupa la cantidad de ejercicios realizados en un día de la semana para análisis estadístico. """
 class EstadisticaDia(BaseModel):
     dia_semana: DiaSemana
     ejercicios: int
 
-
+""" Respuesta consolidada con métricas globales, rutinas más usadas y días con mayor actividad """
 class EstadisticasResponse(BaseModel):
     total_rutinas: int
     total_ejercicios: int
     top_rutinas: List[EstadisticaRutina]
     dias_mas_entrenados: List[EstadisticaDia]
 
-
+"""Define los campos comunes para crear o leer una planificación de rutina en una fecha."""
 class PlanificacionBase(BaseModel):
     fecha: date
     rutina_id: int
 
-
+"""Payload para programar una nueva rutina, heredando los campos obligatorios de la base."""
 class PlanificacionCreate(PlanificacionBase):
     pass
 
-
+"""Payload para actualizar parcialmente una planificación, permitiendo modificar fecha o rutina."""
 class PlanificacionUpdate(BaseModel):
     fecha: Optional[date] = None
     rutina_id: Optional[int] = None
 
-
+"""Respuesta de detalle de una planificación, incluyendo la rutina asociada cuando está disponible."""
 class PlanificacionRead(PlanificacionBase):
     id: int
     rutina: Optional[RutinaRead] = None

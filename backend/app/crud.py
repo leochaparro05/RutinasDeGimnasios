@@ -16,6 +16,7 @@ from .schemas import (
     RutinaUpdate,
 )
 
+""" logica de negocio"""
 
 class UniqueNameError(Exception):
     """Se lanza cuando el nombre de rutina ya existe."""
@@ -239,12 +240,12 @@ def obtener_estadisticas(session: Session) -> dict:
 def listar_planificaciones(session: Session) -> List[Planificacion]:
     return session.exec(select(Planificacion).order_by(Planificacion.fecha)).all()
 
-
+#obtener planificación por fecha
 def obtener_plan_por_fecha(session: Session, fecha) -> Optional[Planificacion]:
     stmt = select(Planificacion).where(Planificacion.fecha == fecha)
     return session.exec(stmt).first()
 
-
+#crear planificación
 def crear_planificacion(session: Session, data: PlanificacionCreate) -> Planificacion:
     plan = Planificacion(fecha=data.fecha, rutina_id=data.rutina_id)
     session.add(plan)
@@ -252,7 +253,7 @@ def crear_planificacion(session: Session, data: PlanificacionCreate) -> Planific
     session.refresh(plan)
     return plan
 
-
+#actualizar planificación
 def actualizar_planificacion(session: Session, plan: Planificacion, data: PlanificacionUpdate) -> Planificacion:
     if data.fecha is not None:
         plan.fecha = data.fecha
@@ -263,7 +264,7 @@ def actualizar_planificacion(session: Session, plan: Planificacion, data: Planif
     session.refresh(plan)
     return plan
 
-
+#eliminar planificación
 def eliminar_planificacion(session: Session, plan: Planificacion) -> None:
     session.delete(plan)
     session.commit()

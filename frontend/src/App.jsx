@@ -17,6 +17,8 @@ import {
   exportRutinas,
 } from "./api";
 
+//componentes de las pestañas, estructura de las vistas y funcionalidades
+
 // Días disponibles (para selects)
 const dias = [
   "Lunes",
@@ -141,6 +143,7 @@ function App() {
   const submitRutina = async (e) => {
     e.preventDefault();
     setError("");
+    //validar que los ejercicios tengan nombre
     try {
       const ejercicios = ejerciciosNuevos
         .filter((ej) => ej.nombre.trim())
@@ -161,6 +164,7 @@ function App() {
   };
 
   // Eliminar rutina
+  //validar que el usuario confirme la eliminación
   const eliminarRutinaHandler = async (id) => {
     if (!confirm("¿Eliminar la rutina y sus ejercicios?")) return;
     try {
@@ -172,6 +176,7 @@ function App() {
   };
 
   // Preparar formulario para agregar ejercicio a una rutina
+
   const prepararEjercicioRutina = (rutinaId) =>
     setEjercicioPorRutina((prev) => ({
       ...prev,
@@ -179,6 +184,7 @@ function App() {
     }));
 
   // Agregar ejercicio a una rutina existente
+      //validar que el ejercicio tenga nombre
   const agregarEjercicioRutina = async (rutinaId) => {
     const data = ejercicioPorRutina[rutinaId];
     if (!data?.nombre) return;
@@ -198,6 +204,7 @@ function App() {
   };
 
   // Preparar edición de un ejercicio
+  //validar que el ejercicio tenga nombre
   const editarEjercicio = (ejercicio) => {
     setEditandoEjercicio(ejercicio.id);
     setEjercicioPorRutina((prev) => ({
@@ -211,6 +218,7 @@ function App() {
   };
 
   // Guardar edición de un ejercicio
+  //validar que el ejercicio tenga nombre
   const guardarEdicionEjercicio = async (ejercicioId) => {
     const data = ejercicioPorRutina[`edit-${ejercicioId}`];
     try {
@@ -229,6 +237,7 @@ function App() {
   };
 
   // Eliminar ejercicio
+  //validar que el usuario confirme la eliminación
   const eliminarEjercicioHandler = async (id) => {
     if (!confirm("¿Eliminar ejercicio?")) return;
     try {
@@ -240,6 +249,7 @@ function App() {
   };
 
   // Renombrar rutina (prompt simple)
+  //validar que el nuevo nombre no sea el mismo que el actual
   const actualizarRutinaNombre = async (rutina) => {
     const nuevo = prompt("Nuevo nombre:", rutina.nombre);
     if (!nuevo || nuevo === rutina.nombre) return;
@@ -251,6 +261,8 @@ function App() {
     }
   };
 
+  // Duplicar rutina
+  //validar que el usuario confirme la duplicación
   const duplicarRutinaHandler = async (rutina) => {
     const nuevo = prompt(
       "Nombre opcional para la copia (deja vacío para generar uno automáticamente):",
@@ -265,6 +277,7 @@ function App() {
   };
 
   // Preprocesar rutinas para agrupar por día
+  //validar que las rutinas tengan ejercicios
   const rutinasConDias = useMemo(
     () =>
       rutinas.map((r) => ({
@@ -274,18 +287,24 @@ function App() {
     [rutinas]
   );
 
+  // Paginado
+  //validar que la nueva página no sea menor a 1 o mayor al total de páginas
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const irPagina = (nueva) => {
     if (nueva < 1 || nueva > totalPages) return;
     setPage(nueva);
   };
 
+  // Limpiar filtros
+  //validar que los filtros no sean vacíos
   const limpiarFiltros = () => {
     setFiltroDia("");
     setFiltroEjercicio("");
     setPage(1);
   };
 
+  // Cargar estadísticas
+  //validar que las estadísticas se carguen correctamente
   const cargarStats = async () => {
     try {
       const resp = await fetchStats();
@@ -296,6 +315,8 @@ function App() {
     }
   };
 
+  // Cargar planificaciones
+  //validar que las planificaciones se carguen correctamente
   const cargarPlanificaciones = async () => {
     try {
       const resp = await fetchPlanificaciones();
@@ -305,22 +326,27 @@ function App() {
     }
   };
 
-  // Drag & Drop de ejercicios
+    // Drag & Drop de ejercicios
+    //validar que el ejercicio tenga id
   const onDragStart = (ej, dia, rutinaId) => setDragData({ ejercicioId: ej.id, dia, rutinaId });
   const onDragOver = (e, dia, rutinaId) => {
     if (dragData && dragData.dia === dia && dragData.rutinaId === rutinaId) {
       e.preventDefault();
     }
   };
+
+  // Drop de ejercicios
   const onDrop = async (targetEj, dia, rutina) => {
     if (!dragData || dragData.dia !== dia || dragData.rutinaId !== rutina.id) return;
     if (dragData.ejercicioId === targetEj.id) return;
 
+    // Reasignar orden secuencial en este día
     const ejerciciosDia = [...(rutina.ejerciciosPorDia[dia] || [])];
     const draggedIdx = ejerciciosDia.findIndex((e) => e.id === dragData.ejercicioId);
     const targetIdx = ejerciciosDia.findIndex((e) => e.id === targetEj.id);
     if (draggedIdx === -1 || targetIdx === -1) return;
 
+    // Mover el ejercicio
     const [dragged] = ejerciciosDia.splice(draggedIdx, 1);
     ejerciciosDia.splice(targetIdx, 0, dragged);
 
@@ -338,18 +364,23 @@ function App() {
   };
 
   // Helpers calendario
+  //validar que la fecha sea ISO
   const toISO = (d) => d.toISOString().slice(0, 10);
+  // Obtener las fechas de la semana
   const weekDates = Array.from({ length: 7 }).map((_, idx) => {
     const d = new Date();
     d.setDate(d.getDate() + idx);
     return d;
   });
 
+  // Obtener las planificaciones por fecha
+  //validar que las planificaciones se carguen correctamente
   const planPorFecha = plans.reduce((acc, p) => {
     acc[p.fecha] = p;
     return acc;
   }, {});
 
+  // Guardar planificación
   const guardarPlan = async (fecha, rutinaId) => {
     const existente = planPorFecha[fecha];
     try {
@@ -364,6 +395,8 @@ function App() {
     }
   };
 
+  // Borrar planificación
+  //validar que la planificación exista
   const borrarPlan = async (fecha) => {
     const existente = planPorFecha[fecha];
     if (!existente) return;
@@ -375,6 +408,7 @@ function App() {
     }
   };
 
+  // Vista principal
   return (
     <div className="container">
       <div className="header">
@@ -570,6 +604,8 @@ function App() {
           </form>
         </div>
       )}
+
+
 
       {activeTab === "listar" && (
         <div className="card" style={{ marginTop: 12 }}>
@@ -915,12 +951,13 @@ function App() {
         </div>
       )}
 
+      {/* estadisticas */}
       {activeTab === "estadisticas" && (
         <div className="card" style={{ marginTop: 12 }}>
           <div className="space-between">
             <div>
               <h3 className="title">Estadísticas</h3>
-              <p className="muted">Totales, top rutinas y días más entrenados</p>
+    
             </div>
             <button className="secondary" onClick={cargarStats}>
               Refrescar
@@ -1017,6 +1054,7 @@ function App() {
         </div>
       )}
 
+{/* exportar rutinas en formato csv o pdf */}
       {activeTab === "listar" && (
         <div className="card" style={{ marginTop: 12 }}>
           <div className="space-between">

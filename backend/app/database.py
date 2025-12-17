@@ -4,6 +4,8 @@ from typing import Generator
 from dotenv import load_dotenv
 from sqlmodel import Session, SQLModel, create_engine
 
+""" configuración para la conexión a la base de datos """
+
 # Cargar variables de entorno desde .env al iniciar el proceso
 load_dotenv()
 
